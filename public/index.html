@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Digital Voice Notepad</title>
+
+<style>
+body{
+  margin:0;
+  height:100vh;
+  background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-family:Arial;
+  color:white;
+}
+
+.container{
+  width:540px;
+  background:#111;
+  border-radius:12px;
+  box-shadow:0 0 20px rgba(0,255,255,0.4);
+}
+
+.menu{
+  display:flex;
+  flex-wrap:wrap;
+  background:#222;
+  padding:8px;
+  border-radius:12px 12px 0 0;
+}
+
+.menu button{
+  background:none;
+  border:none;
+  color:#00ffcc;
+  margin-right:12px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+textarea{
+  width:100%;
+  height:230px;
+  background:black;
+  color:#00ffcc;
+  border:none;
+  padding:10px;
+  resize:none;
+  font-size:15px;
+}
+
+.controls{
+  display:flex;
+  padding:10px;
+}
+
+.controls button{
+  flex:1;
+  margin:5px;
+  padding:10px;
+  border:none;
+  border-radius:6px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.voice{background:#00ffcc;}
+.clear{background:#ff4d4d;}
+
+.voice.active{
+  animation:pulse 1s infinite;
+}
+
+@keyframes pulse{
+  0%{box-shadow:0 0 5px #00ffcc;}
+  50%{box-shadow:0 0 20px #00ffcc;}
+  100%{box-shadow:0 0 5px #00ffcc;}
+}
+</style>
+</head>
+
+<body>
+
+<div class="container" id="notepad">
+
+  <!-- MENU BAR -->
+  <div class="menu">
+    <button onclick="newNote()">New</button>
+    <button onclick="saveFile()">Save</button>
+    <button onclick="saveAs()">Save As</button>
+    <button onclick="openFile()">Open</button>
+    <button id="minMaxBtn" onclick="toggleNote()">Minimize</button>
+  </div>
+
+  <!-- TEXT AREA -->
+  <textarea id="note"></textarea>
+
+  <!-- CONTROLS -->
+  <div class="controls">
+    <button class="voice" id="voiceBtn" onclick="startVoice()">🎤 Voice</button>
+    <button class="clear" onclick="clearNote()">✂ Clear</button>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept=".txt" style="display:none">
+
+<script>
+let recognition;
+let minimized = false;
+let currentFileName = "note.txt";
+
+function startVoice(){
+  const btn = document.getElementById("voiceBtn");
+  btn.classList.add("active");
+
+  recognition = new webkitSpeechRecognition();
+  recognition.lang = "en-IN";
+
+  recognition.onresult = e => {
+    note.value += e.results[0][0].transcript + " ";
+  };
+
+  recognition.onend = () => btn.classList.remove("active");
+  recognition.start();
+}
+
+function saveFile(){
+  download(currentFileName);
+}
+
+function saveAs(){
+  const name = prompt("Enter file name", currentFileName);
+  if(name){
+    currentFileName = name;
+    download(name);
+  }
+}
+
+function download(name){
+  const blob = new Blob([note.value], {type:"text/plain"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+}
+
+function openFile(){
+  fileInput.click();
+}
+
+fileInput.onchange = e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  currentFileName = file.name;
+  const reader = new FileReader();
+  reader.onload = () => note.value = reader.result;
+  reader.readAsText(file);
+}
+
+function newNote(){
+  if(confirm("Clear current note?")){
+    note.value = "";
+    currentFileName = "note.txt";
+  }
+}
+
+function clearNote(){
+  note.value = "";
+}
+
+function toggleNote(){
+  const pad = document.getElementById("notepad");
+  const btn = document.getElementById("minMaxBtn");
+
+  if(!minimized){
+    pad.style.display = "none";
+    btn.innerText = "Maximize";
+    minimized = true;
+  }else{
+    pad.style.display = "block";
+    btn.innerText = "Minimize";
+    minimized = false;
+  }
+}
+</script>
+
+</body>
+</html>
