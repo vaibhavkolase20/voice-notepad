@@ -47,17 +47,17 @@ pipeline {
             }
         }
 
-        stage('Checkout Code') {
+        stage('Checkout Code from GitHub') {
             steps {
                 git branch: 'main',
-                url: 'https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git'
+                    url: 'https://github.com/vaibhavkolase20/voice-notepad.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 sh '''
-                docker build -t digital-notepad-app .
+                docker build -t voice-notepad-app .
                 '''
             }
         }
@@ -65,8 +65,8 @@ pipeline {
         stage('Stop Old Container') {
             steps {
                 sh '''
-                docker stop digital-notepad || true
-                docker rm digital-notepad || true
+                docker stop voice-notepad || true
+                docker rm voice-notepad || true
                 '''
             }
         }
@@ -75,9 +75,9 @@ pipeline {
             steps {
                 sh '''
                 docker run -d \
-                --name digital-notepad \
+                --name voice-notepad \
                 -p 3000:3000 \
-                digital-notepad-app
+                voice-notepad-app
                 '''
             }
         }
