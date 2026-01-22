@@ -3,51 +3,39 @@ pipeline {
 
     stages {
 
-        stage('Check Docker') {
+        stage('Fix Docker Permission') {
             steps {
                 sh '''
-                if command -v docker >/dev/null 2>&1; then
-                  echo "Docker already installed"
-                  docker --version
-                else
-                  echo "Docker not installed"
-                fi
+                echo "Running as user:"
+                whoami
+                id
+
+                echo "Adding jenkins user to docker group..."
+                sudo usermod -aG docker jenkins || true
+
+                echo "Restarting Docker service..."
+                sudo systemctl restart docker
+
+                echo "Restarting Jenkins service to apply group change..."
+                sudo systemctl restart jenkins || true
+
+                echo "Docker socket permission:"
+                ls -l /var/run/docker.sock
                 '''
             }
         }
 
-        stage('Install Docker') {
+        stage('Verify Docker Access') {
             steps {
                 sh '''
-                if ! command -v docker >/dev/null 2>&1; then
-                  echo "Installing Docker..."
-
-                  sudo apt update -y
-                  sudo apt install -y docker.io
-
-                  sudo systemctl start docker
-                  sudo systemctl enable docker
-
-                  sudo usermod -aG docker ubuntu
-
-                  echo "Docker installation completed"
-                else
-                  echo "Docker already present, skipping install"
-                fi
+                echo "Verifying Docker access..."
+                docker --version
+                docker ps
                 '''
             }
         }
 
-        stage('Verify Docker') {
-            steps {
-                sh '''
-                docker --version || sudo docker --version
-                sudo docker ps
-                '''
-            }
-        }
-
-        stage('Checkout Code from GitHub') {
+        stage('Checkout Code') {
             steps {
                 git branch: 'main',
                     url: 'https://github.com/vaibhavkolase20/voice-notepad.git'
@@ -75,9 +63,9 @@ pipeline {
             steps {
                 sh '''
                 docker run -d \
-                --name voice-notepad \
-                -p 3000:3000 \
-                voice-notepad-app
+                  --name voice-notepad \
+                  -p 3000:3000 \
+                  voice-notepad-app
                 '''
             }
         }
