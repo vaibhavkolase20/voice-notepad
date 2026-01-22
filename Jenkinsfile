@@ -3,34 +3,15 @@ pipeline {
 
     stages {
 
-        stage('Fix Docker Permission') {
+        stage('Check User & Docker') {
             steps {
                 sh '''
-                echo "Running as user:"
+                echo "Current User:"
                 whoami
                 id
 
-                echo "Adding jenkins user to docker group..."
-                sudo usermod -aG docker jenkins || true
-
-                echo "Restarting Docker service..."
-                sudo systemctl restart docker
-
-                echo "Restarting Jenkins service to apply group change..."
-                sudo systemctl restart jenkins || true
-
-                echo "Docker socket permission:"
-                ls -l /var/run/docker.sock
-                '''
-            }
-        }
-
-        stage('Verify Docker Access') {
-            steps {
-                sh '''
-                echo "Verifying Docker access..."
-                docker --version
-                docker ps
+                echo "Docker Version (with sudo):"
+                sudo docker --version
                 '''
             }
         }
@@ -45,7 +26,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh '''
-                docker build -t voice-notepad-app .
+                sudo docker build -t voice-notepad-app .
                 '''
             }
         }
@@ -53,8 +34,8 @@ pipeline {
         stage('Stop Old Container') {
             steps {
                 sh '''
-                docker stop voice-notepad || true
-                docker rm voice-notepad || true
+                sudo docker stop voice-notepad || true
+                sudo docker rm voice-notepad || true
                 '''
             }
         }
@@ -62,10 +43,18 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 sh '''
-                docker run -d \
+                sudo docker run -d \
                   --name voice-notepad \
                   -p 3000:3000 \
                   voice-notepad-app
+                '''
+            }
+        }
+
+        stage('Verify Running Container') {
+            steps {
+                sh '''
+                sudo docker ps
                 '''
             }
         }
